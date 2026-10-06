@@ -1,0 +1,93 @@
+name: build ipa
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: erosion-ipa
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: select newest Xcode
+        run: |
+          set -uo pipefail
+          APP=""
+          for cand in /Applications/Xcode*.app; do
+            if [ -d "$cand/Contents/Developer/Platforms/iPhoneOS.platform" ]; then
+              APP="$cand"; break
+            fi
+          done
+          if [ -n "$APP" ]; then sudo xcode-select -s "$APP"; fi
+          echo "selected: $APP"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: resolve SPM packages
+        run: |
+          set -euo pipefail
+          xcodebuild -resolvePackageDependencies \
+            -project Erosion.xcodeproj -scheme Erosion \
+            -derivedDataPath build
+
+      - name: build
+        run: |
+          set -uo pipefail
+          destinations=("generic/platform=iOS" "" "platform=iOS,name=Any iOS Device")
+          for attempt in 0 1 2; do
+            d="${destinations[$attempt]}"
+            echo "::group::xcodebuild attempt $((attempt+1)) destination='${d}'"
+            args=(-project Erosion.xcodeproj -scheme Erosion
+                  -configuration Release -sdk iphoneos -derivedDataPath build)
+            [ -n "$d" ] && args+=(-destination "$d")
+            set -o pipefail
+            xcodebuild "${args[@]}" \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGN_ENTITLEMENTS="" \
+              AD_HOC_CODE_SIGNING_ALLOWED=YES \
+              build 2>&1 | tail -n 400
+            rc=${PIPESTATUS[0]}
+            echo "::endgroup::"
+            if [ "$rc" -eq 0 ]; then exit 0; fi
+            echo "attempt $((attempt+1)) exited ${rc}"
+            rm -rf build/Build/Intermediates.noindex
+          done
+          exit 1
+
+      - name: package ipa
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name 'Erosion.app' -print -quit)"
+          test -n "$APP_PATH" || { echo "::error::Erosion.app not produced"; exit 1; }
+          rm -rf "$APP_PATH/_CodeSignature" "$APP_PATH/embedded.mobileprovision"
+          /usr/bin/codesign --force --sign - --timestamp=none \
+            --generate-entitlement-der "$APP_PATH" || true
+          /usr/bin/codesign -vvvv --deep "$APP_PATH" || true
+          rm -rf Payload Erosion.ipa
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          ditto -c -k --keepParent Payload Erosion.ipa
+          rm -rf Payload
+          ls -lh Erosion.ipa
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Erosion-unsigned-ipa
+          path: Erosion.ipa
+          if-no-files-found: error
