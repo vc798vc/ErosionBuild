@@ -350,6 +350,14 @@ struct MDMView: View {
                 .disabled(r.isBusy)
 
                 Button {
+                    DeepProbe.shared.runAll()
+                } label: {
+                    Label("深度探针（BA/86886/64742）", systemImage: "magnifyingglass")
+                        .foregroundStyle(.orange)
+                }
+                .disabled(r.isBusy)
+
+                Button {
                     Alertinator.shared.alert(
                         title: "确认移除 MDM 监管？",
                         body: "将把 IsSupervised 置为 false、清除 OrganizationName，并删除 \(MDMURL.sharedFile)。",
