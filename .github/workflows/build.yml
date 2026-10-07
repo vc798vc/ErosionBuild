@@ -54,14 +54,17 @@ jobs:
           #  2) `[ -n "$x" ] && VAR=...` returns 1 on a short-circuit and, under
           #     the runner's `bash -e`, kills the whole step -- which silently
           #     prevented attempts 2 and 3 from ever running. Use real if/else.
-          # Destination order matters on this runner:
+          # Destination order is load-bearing -- do not reorder blindly:
           #   * "generic/platform=iOS" and "platform=iOS,name=Any iOS Device" both
-          #     fail with "iOS 26.0 is not installed" -- the image ships the
-          #     iPhoneOS 26.0 SDK but not the 26.0 platform component.
-          #   * No destination at all DOES work, because we pinned
-          #     SDKROOT = iphoneos in the project, so xcodebuild can infer the
-          #     platform from the SDK alone. Try it first.
-          destinations=("" "generic/platform=iOS" "platform=iOS,name=Any iOS Device")
+          #     fail with rc=70 "iOS 26.0 is not installed" (the image ships the
+          #     iPhoneOS 26.0 SDK but not the 26.0 platform component).
+          #   * Running with NO destination only works AFTER earlier xcodebuild
+          #     invocations have populated build/ (derivedData): as the very
+          #     first call in a job it dies with rc=70 "Found no destinations",
+          #     but as the third call it resolves fine and compiles (verified:
+          #     run 37552106105 attempt 3 reached the compile stage, rc=65).
+          #     So the two failing forms are not wasted -- they warm the cache.
+          destinations=("generic/platform=iOS" "platform=iOS,name=Any iOS Device" "")
           for attempt in 0 1 2; do
             d="${destinations[$attempt]}"
             echo "::group::xcodebuild attempt $((attempt+1)) destination='${d:-<none>}'"
