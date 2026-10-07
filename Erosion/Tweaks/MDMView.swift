@@ -38,25 +38,40 @@ final class MDMRemover: ObservableObject {
     @Published var message: String = "尚未检测"
     @Published var detail: String = ""
     @Published var isBusy: Bool = false
+    @Published var routeUsed: String = ""
 
     private func fileURL(_ dir: String, _ file: String) -> URL {
         URL(fileURLWithPath: dir).appendingPathComponent(file)
     }
 
-    /// 依次尝试「目录级提权」和「文件级提权」，返回第一个成功的目录。
-    private func grantAny() -> String? {
-        var last = ""
+    /// 依次尝试每条候选目录；每条目录内部再依次尝试 27/26 两种路由（见 BadQuery.grantAccessAuto）。
+    /// 返回 (目录, 实际使用的路由)
+    private func grantAny() -> (String, String)? {
+        var trace = ""
         for dir in MDMURL.dirCandidates {
-            let a = bq.grantAccess(atPath: dir)
-            if a.0 { print("(mdm) 目录级提权成功: \(dir)"); return dir }
-            last = "\(dir)\n目录级：\(a.2)（code \(a.1)）"
-
-            let b = bq.grantAccess(atPath: dir, toFileName: MDMURL.cloudFile)
-            if b.0 { print("(mdm) 文件级提权成功: \(dir)"); return dir }
-            last = "\(dir)\n文件级：\(b.2)（code \(b.1)）"
+            let a = bq.grantAccessAuto(atPath: dir)
+            if a.0 {
+                print("(mdm) 提权成功: \(dir) [\(a.3)]")
+                return (dir, a.3)
+            }
+            trace += "路径 \(dir)\n\(a.3)\n"
         }
-        detail = last
+        detail = trace
         return nil
+    }
+
+    /// 失败时给出基于真实系统版本的诚实结论
+    private func failDetail() -> String {
+        let ver = UIDevice.current.systemVersion
+        let bld = buildNumber()
+        var s = "设备：iOS \(ver)（build \(bld)）\n\n"
+        s += detail
+        if ver.hasPrefix("26.") {
+            s += "\n结论：你的系统是 iOS 26.x。Erosion 的 MDM 功能官方仅支持 iOS 27.0 beta1–beta4；已按 bad_query 作者注释尝试了 iOS 26 的备用路由（class 7 / 26 flags），仍被内核拒绝发放 sandbox extension。当前版本上该目录大概率不可达。"
+        } else {
+            s += "\n结论：所有路由均被拒绝，当前系统版本可能已封堵该漏洞。"
+        }
+        return s
     }
 
     func detect() {
@@ -65,21 +80,24 @@ final class MDMRemover: ObservableObject {
         phase = .working
         message = "正在申请访问权限…"
 
-        guard let dir = grantAny() else {
+        guard let g = grantAny() else {
             phase = .failed
             message = "无法访问描述文件目录"
-            if detail.isEmpty { detail = "bad_query 未能取得读写权限，当前系统版本可能已封堵该漏洞。" }
+            detail = failDetail()
             isBusy = false
-            print("(mdm) 检测失败：\(detail)")
+            print("(mdm) 检测失败")
+            Alertinator.shared.alert(title: "检测失败", body: detail)
             return
         }
-        workingPath = dir
+        workingPath = g.0
+        routeUsed = g.1
 
+        let dir = g.0
         let cloud = fileURL(dir, MDMURL.cloudFile)
         if let d = NSMutableDictionary(contentsOf: cloud) {
             supervised = (d["IsSupervised"] as? Bool) ?? false
             orgName = (d["OrganizationName"] as? String) ?? ""
-            detail = "路径：\(dir)\n\(MDMURL.cloudFile) 读取成功。"
+            detail = "路径：\(dir)\n提权路由：\(routeUsed)\n\(MDMURL.cloudFile) 读取成功。"
         } else {
             supervised = false
             orgName = ""
@@ -98,17 +116,19 @@ final class MDMRemover: ObservableObject {
         message = "正在移除监管标记…"
         print("(mdm) 开始一键移除")
 
-        guard let dir = grantAny() else {
+        guard let g = grantAny() else {
             phase = .failed
             message = "无法访问描述文件目录"
-            if detail.isEmpty { detail = "bad_query 未能取得读写权限，当前系统版本可能已封堵该漏洞。" }
+            detail = failDetail()
             isBusy = false
             print("(mdm) 移除失败：提权失败")
-            Alertinator.shared.alert(title: "移除失败", body: "无法访问描述文件目录。\n\n\(detail)")
+            Alertinator.shared.alert(title: "移除失败", body: detail)
             return
         }
-        workingPath = dir
+        workingPath = g.0
+        routeUsed = g.1
 
+        let dir = g.0
         let cloudURL = fileURL(dir, MDMURL.cloudFile)
         let sharedURL = fileURL(dir, MDMURL.sharedFile)
 
@@ -143,7 +163,7 @@ final class MDMRemover: ObservableObject {
         orgName = ""
         phase = .ok
         message = "已移除监管标记"
-        detail = "IsSupervised 已置为 false\nOrganizationName 已清除\n\(MDMURL.sharedFile) 已删除\n\n路径：\(dir)"
+        detail = "IsSupervised 已置为 false\nOrganizationName 已清除\n\(MDMURL.sharedFile) 已删除\n\n路径：\(dir)\n提权路由：\(routeUsed)"
         isBusy = false
         print("(mdm) 一键移除完成")
         Haptic.shared.play(.heavy)
@@ -286,6 +306,16 @@ struct MDMView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
+                }
+                if !r.routeUsed.isEmpty {
+                    HStack {
+                        Text("提权路由")
+                        Spacer()
+                        Text(r.routeUsed)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             } header: {
                 HeaderLabel(text: "状态", icon: "info.circle")
