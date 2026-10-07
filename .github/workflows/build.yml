@@ -46,10 +46,14 @@ jobs:
       - name: build
         run: |
           set -uo pipefail
-          destinations=("generic/platform=iOS" "" "platform=iOS,name=Any iOS Device")
+          # GitHub Actions wraps the step with `set -e`; the xcodebuild|tail
+          # pipeline would otherwise abort the script on the first failing
+          # destination attempt. `|| true` keeps set -e from killing the loop
+          # so all destination forms are tried.
+          destinations=("" "generic/platform=iOS" "platform=iOS,name=Any iOS Device")
           for attempt in 0 1 2; do
             d="${destinations[$attempt]}"
-            echo "::group::xcodebuild attempt $((attempt+1)) destination='${d}'"
+            echo "::group::xcodebuild attempt $((attempt+1)) destination='${d:-<none>}'"
             args=(-project Erosion.xcodeproj -scheme Erosion
                   -configuration Release -sdk iphoneos -derivedDataPath build)
             [ -n "$d" ] && args+=(-destination "$d")
@@ -60,7 +64,7 @@ jobs:
               CODE_SIGN_IDENTITY="" \
               CODE_SIGN_ENTITLEMENTS="" \
               AD_HOC_CODE_SIGNING_ALLOWED=YES \
-              build 2>&1 | tail -n 400
+              build 2>&1 | tail -n 400 || true
             rc=${PIPESTATUS[0]}
             echo "::endgroup::"
             if [ "$rc" -eq 0 ]; then exit 0; fi
