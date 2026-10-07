@@ -86,9 +86,10 @@ final class BAPurge {
             BAPurge.log("(xpc) 创建连接失败")
             return -1
         }
-        if let resume: XPCResumeFn = sym("xpc_connection_resume") { resume(conn) }
+        // 关键：不要 resume！XPC 规定 resume 前必须 set_event_handler，否则 abort（上版闪退根因）。
+        // 未 resume 的连接只用于 get_pid 探测，安全。
         guard let getpid: XPCGetPidFn = sym("xpc_connection_get_pid") else {
-            BAPurge.log("(xpc) 连接已建立（无法取 PID）")
+            BAPurge.log("(xpc) 连接已创建（无法取 PID）")
             return 0
         }
         let pid = getpid(conn)
