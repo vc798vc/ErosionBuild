@@ -24,14 +24,27 @@ jobs:
       - name: select newest Xcode
         run: |
           set -uo pipefail
-          APP=""
-          for cand in /Applications/Xcode*.app; do
-            if [ -d "$cand/Contents/Developer/Platforms/iPhoneOS.platform" ]; then
-              APP="$cand"; break
+          # The image ships ~13 Xcodes (26.0.1 ... 26.6 plus /Applications/Xcode.app).
+          # A plain `for cand in /Applications/Xcode*.app; do ... break` picks the
+          # FIRST glob hit, which is alphabetically Xcode_26.0.1 -- the OLDEST one.
+          # Its iPhoneOS platform is what triggers "iOS 26.0 is not installed".
+          # Pick the highest version instead, using sort -V on CFBundleShortVersionString.
+          BEST=""
+          BESTV="0"
+          for cand in /Applications/Xcode*.app /Applications/Xcode.app; do
+            [ -d "$cand/Contents/Developer/Platforms/iPhoneOS.platform" ] || continue
+            v=$(defaults read "$cand/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null || echo "0")
+            if [ "$(printf '%s\n%s\n' "$BESTV" "$v" | sort -V | tail -1)" = "$v" ]; then
+              BEST="$cand"; BESTV="$v"
             fi
           done
-          if [ -n "$APP" ]; then sudo xcode-select -s "$APP"; fi
-          echo "selected: $APP"
+          APP="$BEST"
+          if [ -n "$APP" ]; then
+            sudo xcode-select -s "$APP"
+            export DEVELOPER_DIR="$APP/Contents/Developer"
+            echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+          fi
+          echo "selected: $APP (version $BESTV)"
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-path
           xcrun --sdk iphoneos --show-sdk-version
@@ -44,7 +57,7 @@ jobs:
           echo "--- DeviceSupport ---"
           ls /Applications/Xcode*.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport 2>/dev/null || true
           echo "--- xcodebuild -showdestinations ---"
-          xcodebuild -showdestinations -project Erosion.xcodeproj -scheme Erosion -sdk iphoneos 2>&1 | head -n 40 || true
+          xcodebuild -showdestinations -project Erosion.xcodeproj -scheme Erosion -sdk iphoneos 2>&1 | head -n 60 || true
 
       - name: resolve SPM packages
         run: |
