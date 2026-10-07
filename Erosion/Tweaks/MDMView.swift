@@ -343,6 +343,13 @@ struct MDMView: View {
                 .disabled(r.isBusy)
 
                 Button {
+                    GlyphCheck.trigger()
+                } label: {
+                    Label("CVE-2026-86950 触发自检（可能闪退）", systemImage: "textformat.abc")
+                }
+                .disabled(r.isBusy)
+
+                Button {
                     Alertinator.shared.alert(
                         title: "确认移除 MDM 监管？",
                         body: "将把 IsSupervised 置为 false、清除 OrganizationName，并删除 \(MDMURL.sharedFile)。",
