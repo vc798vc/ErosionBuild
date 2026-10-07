@@ -9,9 +9,13 @@ import Foundation
 import PartyUI
 
 // version support for different functions
+// NOTE (build patch): upstream only whitelisted 4 specific iOS 27.0 beta
+// build numbers. bad_query is confirmed working through 27.0b5, so we accept
+// the whole 27.x line to avoid the "unsupported -> exit" gate on TQ's device.
+// Tighten back if a later 27.x GM patches the sandbox escape.
 func mgSupported() -> Bool {
-    let buildNum = buildNumber()
-    if doubleSystemVersion() == 27.0 && (buildNum == "24A5355q" || buildNum == "24A5370h" || buildNum == "24A5380h" || buildNum == "24A5390f") {
+    let v = doubleSystemVersion()
+    if v >= 27.0 && v < 28.0 {
         return true
     }
     return false

@@ -49,7 +49,10 @@ jobs:
           # GitHub Actions wraps the step with `set -e`; the xcodebuild|tail
           # pipeline would otherwise abort the script on the first failing
           # destination attempt. `|| true` keeps set -e from killing the loop
-          # so all destination forms are tried.
+          # so all destination forms are tried. A plain rc==0 is NOT enough:
+          # Xcode can "succeed" while producing an empty .app (no Mach-O) when
+          # the synchronized-folder group fails to discover sources. We require
+          # a real Erosion binary > 1 MB before declaring success.
           destinations=("" "generic/platform=iOS" "platform=iOS,name=Any iOS Device")
           for attempt in 0 1 2; do
             d="${destinations[$attempt]}"
@@ -67,8 +70,26 @@ jobs:
               build 2>&1 | tail -n 400 || true
             rc=${PIPESTATUS[0]}
             echo "::endgroup::"
-            if [ "$rc" -eq 0 ]; then exit 0; fi
-            echo "attempt $((attempt+1)) exited ${rc}"
+
+            if [ "$rc" -eq 0 ]; then
+              APP_PATH="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name 'Erosion.app' -print -quit)"
+              BIN=""
+              [ -n "$APP_PATH" ] && BIN="$APP_PATH/Erosion"
+              if [ -n "$BIN" ] && [ -f "$BIN" ]; then
+                sz=$(stat -f%z "$BIN")
+                if [ "$sz" -gt 1000000 ]; then
+                  echo "binary OK ($sz bytes) -> success"
+                  exit 0
+                else
+                  echo "::warning::binary too small ($sz bytes), retry"
+                  rc=1
+                fi
+              else
+                echo "::warning::no Erosion binary produced, retry"
+                rc=1
+              fi
+            fi
+            echo "attempt $((attempt+1)) rc=${rc}"
             rm -rf build/Build/Intermediates.noindex
           done
           exit 1
@@ -78,6 +99,7 @@ jobs:
           set -euo pipefail
           APP_PATH="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name 'Erosion.app' -print -quit)"
           test -n "$APP_PATH" || { echo "::error::Erosion.app not produced"; exit 1; }
+          test -f "$APP_PATH/Erosion" || { echo "::error::Erosion binary missing"; exit 1; }
           rm -rf "$APP_PATH/_CodeSignature" "$APP_PATH/embedded.mobileprovision"
           /usr/bin/codesign --force --sign - --timestamp=none \
             --generate-entitlement-der "$APP_PATH" || true
@@ -87,7 +109,12 @@ jobs:
           cp -R "$APP_PATH" Payload/
           ditto -c -k --keepParent Payload Erosion.ipa
           rm -rf Payload
-          ls -lh Erosion.ipa
+          sz=$(stat -f%z Erosion.ipa)
+          echo "Erosion.ipa size: $sz bytes"
+          if [ "$sz" -lt 1000000 ]; then
+            echo "::error::Erosion.ipa suspiciously small ($sz bytes)"
+            exit 1
+          fi
 
       - name: upload artifact
         uses: actions/upload-artifact@v4

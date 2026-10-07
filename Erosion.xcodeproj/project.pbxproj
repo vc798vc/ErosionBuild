@@ -10,30 +10,140 @@
 		1541E9D33036B49300C8AF93 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 1541E9D23036B49300C8AF93 /* ZIPFoundation */; };
 		1541E9D63036B56800C8AF93 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1541E9D53036B56800C8AF93 /* MobileCoreServices.framework */; };
 		157FB19F30301A850050327F /* PartyUI in Frameworks */ = {isa = PBXBuildFile; productRef = 157FB19E30301A850050327F /* PartyUI */; };
+		000000000000000000000008 /* ErosionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000007 /* ErosionApp.swift */; };
+		00000000000000000000000A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000009 /* ContentView.swift */; };
+		00000000000000000000000C /* ErosionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000B /* ErosionManager.swift */; };
+		000000000000000000000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000F /* Assets.xcassets */; };
+		000000000000000000000012 /* App/ButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000011 /* App/ButtonStyles.swift */; };
+		000000000000000000000014 /* App/InfoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000013 /* App/InfoSheet.swift */; };
+		000000000000000000000016 /* App/LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000015 /* App/LogView.swift */; };
+		000000000000000000000018 /* App/SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000017 /* App/SettingsView.swift */; };
+		00000000000000000000001A /* Exploits/BadQuerySwift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000019 /* Exploits/BadQuerySwift.swift */; };
+		00000000000000000000001C /* Exploits/bad_query.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001B /* Exploits/bad_query.c */; };
+		00000000000000000000001F /* Helpers/DeviceInfoHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* Helpers/DeviceInfoHelpers.swift */; };
+		000000000000000000000021 /* Helpers/Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* Helpers/Extensions.swift */; };
+		000000000000000000000023 /* Helpers/FSHandlers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* Helpers/FSHandlers.swift */; };
+		000000000000000000000025 /* Helpers/Respring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* Helpers/Respring.swift */; };
+		000000000000000000000027 /* Helpers/WriteHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* Helpers/WriteHelpers.swift */; };
+		000000000000000000000029 /* MobileGestalt/GestaltHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000028 /* MobileGestalt/GestaltHelpers.swift */; };
+		00000000000000000000002B /* MobileGestalt/GestaltStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002A /* MobileGestalt/GestaltStore.swift */; };
+		00000000000000000000002D /* MobileGestalt/GestaltView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002C /* MobileGestalt/GestaltView.swift */; };
+		00000000000000000000002F /* PosterBoard/PBHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002E /* PosterBoard/PBHandler.swift */; };
+		000000000000000000000031 /* PosterBoard/PosterBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* PosterBoard/PosterBoardView.swift */; };
+		000000000000000000000033 /* Tweaks/ConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000032 /* Tweaks/ConfigView.swift */; };
+		000000000000000000000035 /* Tweaks/OperationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000034 /* Tweaks/OperationsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		151457FF302FE21A00DDFE07 /* Erosion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Erosion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1541E9D53036B56800C8AF93 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/MobileCoreServices.framework; sourceTree = DEVELOPER_DIR; };
+		000000000000000000000007 /* ErosionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErosionApp.swift; sourceTree = "<group>"; };
+		000000000000000000000009 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		00000000000000000000000B /* ErosionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErosionManager.swift; sourceTree = "<group>"; };
+		00000000000000000000000D /* bridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bridge.h; sourceTree = "<group>"; };
+		00000000000000000000000E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		00000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		000000000000000000000011 /* App/ButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/ButtonStyles.swift; sourceTree = "<group>"; };
+		000000000000000000000013 /* App/InfoSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/InfoSheet.swift; sourceTree = "<group>"; };
+		000000000000000000000015 /* App/LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/LogView.swift; sourceTree = "<group>"; };
+		000000000000000000000017 /* App/SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/SettingsView.swift; sourceTree = "<group>"; };
+		000000000000000000000019 /* Exploits/BadQuerySwift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exploits/BadQuerySwift.swift; sourceTree = "<group>"; };
+		00000000000000000000001B /* Exploits/bad_query.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Exploits/bad_query.c; sourceTree = "<group>"; };
+		00000000000000000000001D /* Exploits/bad_query.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Exploits/bad_query.h; sourceTree = "<group>"; };
+		00000000000000000000001E /* Helpers/DeviceInfoHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers/DeviceInfoHelpers.swift; sourceTree = "<group>"; };
+		000000000000000000000020 /* Helpers/Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers/Extensions.swift; sourceTree = "<group>"; };
+		000000000000000000000022 /* Helpers/FSHandlers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers/FSHandlers.swift; sourceTree = "<group>"; };
+		000000000000000000000024 /* Helpers/Respring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers/Respring.swift; sourceTree = "<group>"; };
+		000000000000000000000026 /* Helpers/WriteHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers/WriteHelpers.swift; sourceTree = "<group>"; };
+		000000000000000000000028 /* MobileGestalt/GestaltHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileGestalt/GestaltHelpers.swift; sourceTree = "<group>"; };
+		00000000000000000000002A /* MobileGestalt/GestaltStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileGestalt/GestaltStore.swift; sourceTree = "<group>"; };
+		00000000000000000000002C /* MobileGestalt/GestaltView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileGestalt/GestaltView.swift; sourceTree = "<group>"; };
+		00000000000000000000002E /* PosterBoard/PBHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterBoard/PBHandler.swift; sourceTree = "<group>"; };
+		000000000000000000000030 /* PosterBoard/PosterBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterBoard/PosterBoardView.swift; sourceTree = "<group>"; };
+		000000000000000000000032 /* Tweaks/ConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tweaks/ConfigView.swift; sourceTree = "<group>"; };
+		000000000000000000000034 /* Tweaks/OperationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tweaks/OperationsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		15556FFF303C04DB006C2969 /* Exceptions for "Erosion" folder in "Erosion" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 151457FE302FE21A00DDFE07 /* Erosion */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
+/* Begin PBXFileSystemSynchronizedRootGroup section (replaced by explicit groups) */
 		15145801302FE21A00DDFE07 /* Erosion */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				15556FFF303C04DB006C2969 /* Exceptions for "Erosion" folder in "Erosion" target */,
+			isa = PBXGroup;
+			children = (
+				000000000000000000000007 /* ErosionApp.swift */,
+				000000000000000000000009 /* ContentView.swift */,
+				00000000000000000000000B /* ErosionManager.swift */,
+				00000000000000000000000D /* bridge.h */,
+				00000000000000000000000E /* Info.plist */,
+				00000000000000000000000F /* Assets.xcassets */,
+				000000000000000000000001 /* App */,
+				000000000000000000000002 /* Exploits */,
+				000000000000000000000003 /* Helpers */,
+				000000000000000000000004 /* MobileGestalt */,
+				000000000000000000000005 /* PosterBoard */,
+				000000000000000000000006 /* Tweaks */,
 			);
 			path = Erosion;
+			sourceTree = "<group>";
+		};
+		000000000000000000000001 /* App */ = {
+			isa = PBXGroup;
+			children = (
+					000000000000000000000011 /* App/ButtonStyles.swift */,
+					000000000000000000000013 /* App/InfoSheet.swift */,
+					000000000000000000000015 /* App/LogView.swift */,
+					000000000000000000000017 /* App/SettingsView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		000000000000000000000002 /* Exploits */ = {
+			isa = PBXGroup;
+			children = (
+					000000000000000000000019 /* Exploits/BadQuerySwift.swift */,
+					00000000000000000000001B /* Exploits/bad_query.c */,
+					00000000000000000000001D /* Exploits/bad_query.h */,
+			);
+			path = Exploits;
+			sourceTree = "<group>";
+		};
+		000000000000000000000003 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+					00000000000000000000001E /* Helpers/DeviceInfoHelpers.swift */,
+					000000000000000000000020 /* Helpers/Extensions.swift */,
+					000000000000000000000022 /* Helpers/FSHandlers.swift */,
+					000000000000000000000024 /* Helpers/Respring.swift */,
+					000000000000000000000026 /* Helpers/WriteHelpers.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		000000000000000000000004 /* MobileGestalt */ = {
+			isa = PBXGroup;
+			children = (
+					000000000000000000000028 /* MobileGestalt/GestaltHelpers.swift */,
+					00000000000000000000002A /* MobileGestalt/GestaltStore.swift */,
+					00000000000000000000002C /* MobileGestalt/GestaltView.swift */,
+			);
+			path = MobileGestalt;
+			sourceTree = "<group>";
+		};
+		000000000000000000000005 /* PosterBoard */ = {
+			isa = PBXGroup;
+			children = (
+					00000000000000000000002E /* PosterBoard/PBHandler.swift */,
+					000000000000000000000030 /* PosterBoard/PosterBoardView.swift */,
+			);
+			path = PosterBoard;
+			sourceTree = "<group>";
+		};
+		000000000000000000000006 /* Tweaks */ = {
+			isa = PBXGroup;
+			children = (
+					000000000000000000000032 /* Tweaks/ConfigView.swift */,
+					000000000000000000000034 /* Tweaks/OperationsView.swift */,
+			);
+			path = Tweaks;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -92,9 +202,6 @@
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				15145801302FE21A00DDFE07 /* Erosion */,
-			);
 			name = Erosion;
 			packageProductDependencies = (
 				157FB19E30301A850050327F /* PartyUI */,
@@ -148,6 +255,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				000000000000000000000010 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -158,6 +266,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				000000000000000000000008 /* ErosionApp.swift in Sources */,
+				00000000000000000000000A /* ContentView.swift in Sources */,
+				00000000000000000000000C /* ErosionManager.swift in Sources */,
+				000000000000000000000012 /* App/ButtonStyles.swift in Sources */,
+				000000000000000000000014 /* App/InfoSheet.swift in Sources */,
+				000000000000000000000016 /* App/LogView.swift in Sources */,
+				000000000000000000000018 /* App/SettingsView.swift in Sources */,
+				00000000000000000000001A /* Exploits/BadQuerySwift.swift in Sources */,
+				00000000000000000000001C /* Exploits/bad_query.c in Sources */,
+				00000000000000000000001F /* Helpers/DeviceInfoHelpers.swift in Sources */,
+				000000000000000000000021 /* Helpers/Extensions.swift in Sources */,
+				000000000000000000000023 /* Helpers/FSHandlers.swift in Sources */,
+				000000000000000000000025 /* Helpers/Respring.swift in Sources */,
+				000000000000000000000027 /* Helpers/WriteHelpers.swift in Sources */,
+				000000000000000000000029 /* MobileGestalt/GestaltHelpers.swift in Sources */,
+				00000000000000000000002B /* MobileGestalt/GestaltStore.swift in Sources */,
+				00000000000000000000002D /* MobileGestalt/GestaltView.swift in Sources */,
+				00000000000000000000002F /* PosterBoard/PBHandler.swift in Sources */,
+				000000000000000000000031 /* PosterBoard/PosterBoardView.swift in Sources */,
+				000000000000000000000033 /* Tweaks/ConfigView.swift in Sources */,
+				000000000000000000000035 /* Tweaks/OperationsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
