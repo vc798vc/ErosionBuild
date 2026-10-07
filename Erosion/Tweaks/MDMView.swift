@@ -331,6 +331,19 @@ struct MDMView: View {
 
                 Button {
                     Alertinator.shared.alert(
+                        title: "用 BA purge 清除 MDM？",
+                        body: "通过 Background Assets 沙箱逃逸把 MDM 配置文件标记为可清除，再制造内存压力让系统回收它们。\n\n适用：iOS 26.4.2 及以下。",
+                        actionLabel: "执行",
+                        action: { BAPurge.shared.run() }
+                    )
+                } label: {
+                    Label("BA purge 一键清除 MDM", systemImage: "trash.fill")
+                        .foregroundStyle(.red)
+                }
+                .disabled(r.isBusy)
+
+                Button {
+                    Alertinator.shared.alert(
                         title: "确认移除 MDM 监管？",
                         body: "将把 IsSupervised 置为 false、清除 OrganizationName，并删除 \(MDMURL.sharedFile)。",
                         actionLabel: "确认移除",
