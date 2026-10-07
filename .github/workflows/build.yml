@@ -36,6 +36,16 @@ jobs:
           xcrun --sdk iphoneos --show-sdk-path
           xcrun --sdk iphoneos --show-sdk-version
 
+      - name: diagnose destinations
+        run: |
+          set -uo pipefail
+          echo "--- iPhoneOS SDKs present ---"
+          ls /Applications/Xcode*.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs 2>/dev/null || true
+          echo "--- DeviceSupport ---"
+          ls /Applications/Xcode*.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport 2>/dev/null || true
+          echo "--- xcodebuild -showdestinations ---"
+          xcodebuild -showdestinations -project Erosion.xcodeproj -scheme Erosion -sdk iphoneos 2>&1 | head -n 40 || true
+
       - name: resolve SPM packages
         run: |
           set -euo pipefail
@@ -54,18 +64,19 @@ jobs:
           #  2) `[ -n "$x" ] && VAR=...` returns 1 on a short-circuit and, under
           #     the runner's `bash -e`, kills the whole step -- which silently
           #     prevented attempts 2 and 3 from ever running. Use real if/else.
-          # Destination order is load-bearing -- do not reorder blindly:
-          #   * "generic/platform=iOS" and "platform=iOS,name=Any iOS Device" both
-          #     fail with rc=70 "iOS 26.0 is not installed" (the image ships the
+          # Destination resolution on this runner is RACY, not deterministic:
+          #   * "generic/platform=iOS" / "platform=iOS,name=Any iOS Device" always
+          #     die with rc=70 "iOS 26.0 is not installed" (the image has the
           #     iPhoneOS 26.0 SDK but not the 26.0 platform component).
-          #   * Running with NO destination only works AFTER earlier xcodebuild
-          #     invocations have populated build/ (derivedData): as the very
-          #     first call in a job it dies with rc=70 "Found no destinations",
-          #     but as the third call it resolves fine and compiles (verified:
-          #     run 37552106105 attempt 3 reached the compile stage, rc=65).
-          #     So the two failing forms are not wasted -- they warm the cache.
-          destinations=("generic/platform=iOS" "platform=iOS,name=Any iOS Device" "")
-          for attempt in 0 1 2; do
+          #   * Running with NO destination USUALLY dies with rc=70 "Found no
+          #     destinations", but intermittently resolves and builds for real
+          #     (verified: run 37552106105 attempt 3 compiled arm64 successfully,
+          #     including ZIPFoundation + PartyUI; identical invocations in runs
+          #     37552507869 / 37552902636 got rc=70).
+          # So the strategy is: fire one warm-up attempt, then retry the
+          # no-destination form several times -- a failing attempt costs ~3s.
+          destinations=("generic/platform=iOS" "" "" "" "" "" "platform=iOS,name=Any iOS Device")
+          for attempt in 0 1 2 3 4 5 6; do
             d="${destinations[$attempt]}"
             echo "::group::xcodebuild attempt $((attempt+1)) destination='${d:-<none>}'"
             args=(-project Erosion.xcodeproj -scheme Erosion
