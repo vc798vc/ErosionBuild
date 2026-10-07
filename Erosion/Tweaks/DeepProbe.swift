@@ -72,9 +72,10 @@ final class DeepProbe {
                 log("send_message_with_reply_sync...")
                 if let reply = sendSync(conn, msg) {
                     if let desc: XPCDescFn = sym("xpc_copy_description") {
-                        let d = desc(reply)
-                        log("REPLY: " + String(cString: d))
-                        free(d)
+                        if let d = desc(reply) {
+                            log("REPLY: " + String(cString: d))
+                            free(d)
+                        } else { log("reply 存在但 description 为空") }
                     } else { log("有 reply（无 description 符号）") }
                 } else { log("reply = nil（daem 未响应/无权限）") }
             } else {
