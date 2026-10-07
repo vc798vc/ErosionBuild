@@ -32,6 +32,7 @@
 		000000000000000000000031 /* PosterBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* PosterBoardView.swift */; };
 		000000000000000000000033 /* ConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000032 /* ConfigView.swift */; };
 		000000000000000000000035 /* OperationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000034 /* OperationsView.swift */; };
+		000000000000000000000037 /* MDMView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000036 /* MDMView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +63,7 @@
 		000000000000000000000030 /* PosterBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosterBoardView.swift; sourceTree = "<group>"; };
 		000000000000000000000032 /* ConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigView.swift; sourceTree = "<group>"; };
 		000000000000000000000034 /* OperationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsView.swift; sourceTree = "<group>"; };
+		000000000000000000000036 /* MDMView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDMView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 
@@ -142,6 +144,7 @@
 			children = (
 					000000000000000000000032 /* ConfigView.swift */,
 					000000000000000000000034 /* OperationsView.swift */,
+					000000000000000000000036 /* MDMView.swift */,
 			);
 			path = Tweaks;
 			sourceTree = "<group>";
@@ -287,6 +290,7 @@
 				000000000000000000000031 /* PosterBoardView.swift in Sources */,
 				000000000000000000000033 /* ConfigView.swift in Sources */,
 				000000000000000000000035 /* OperationsView.swift in Sources */,
+				000000000000000000000037 /* MDMView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

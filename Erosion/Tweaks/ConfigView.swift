@@ -19,8 +19,8 @@ enum CNURL {
 }
 
 enum CNMsg {
-    static var supWarning = "If you're using this tweak and your device is already MDM-configured, do NOT touch this toggle! Also, and this goes for all users, you may see a setup screen after respringing. Use at your own risk."
-    static var resetInfo = "By clicking \"Confirm\", your footnote will be removed and your device will be unsupervised."
+    static var supWarning = "如果你的设备已配置 MDM，请不要改动这个开关！另外请注意：所有用户在重启桌面后都可能看到一个设置引导界面。请自行承担风险。"
+    static var resetInfo = "点击“确认”后，锁屏脚注将被移除，设备将变为未受监管状态。"
 }
 
 struct ConfigView: View {
@@ -74,36 +74,36 @@ struct ConfigView: View {
                         }
                     )
                     
-                    TextField("Custom Footnote", text: $footnoteText)
+                    TextField("自定义锁屏脚注", text: $footnoteText)
                 }
                 
                 Section {
-                    PlainToggle(text: "Enable Supervision", infoType: .warning, infoTitle: "Supervision Warning!", infoMessage: CNMsg.supWarning, isOn: $supervised)
+                    PlainToggle(text: "启用监管（Supervision）", infoType: .warning, infoTitle: "监管警告", infoMessage: CNMsg.supWarning, isOn: $supervised)
                     if supervised {
-                        TextField("Organization Name", text: $orgName)
+                        TextField("组织名称", text: $orgName)
                     }
                 } header: {
-                    HeaderLabel(text: "Supervision", icon: "eye")
+                    HeaderLabel(text: "监管状态", icon: "eye")
                 }
             }
-            .navigationTitle("Configurations")
+            .navigationTitle("配置调整")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         if showTips {
-                            Alertinator.shared.alert(title: "Are you sure you'd like to reset your tweaks?", body: CNMsg.resetInfo, actionLabel: "Confirm", action: {
+                            Alertinator.shared.alert(title: "确认要恢复调整吗？", body: CNMsg.resetInfo, actionLabel: "确认", action: {
                                 reset()
                             })
                         } else {
                             reset()
                         }
                     } label: {
-                        Label("Restore Tweaks", systemImage: "gobackward")
+                        Label("恢复调整", systemImage: "gobackward")
                             .labelStyle(.iconOnly)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Apply", role: .adaptiveConfirm) {
+                    Button("应用", role: .adaptiveConfirm) {
                         apply()
                     }
                 }
@@ -118,7 +118,7 @@ struct ConfigView: View {
         if !fm.isWritableFile(atPath: CNURL.sharedDevConfig.path) {
             let res = bq.grantAccess(atPath: FSURL.configProfiles.path)
             if !res.0 {
-                Alertinator.shared.alert(title: "Failed to get write access!", body: AppMsg.opFailed)
+                Alertinator.shared.alert(title: "无法获取写入权限！", body: AppMsg.opFailed)
                 return
             }
         }
@@ -129,7 +129,7 @@ struct ConfigView: View {
                 try data.write(to: CNURL.sharedDevConfig)
             } catch {
                 print("(ft) failed to create footnote file: \(error)")
-                Alertinator.shared.alert(title: "Failed to create footnote file!", body: AppMsg.opFailed)
+                Alertinator.shared.alert(title: "创建脚注文件失败！", body: AppMsg.opFailed)
             }
         }
         loadData()
@@ -159,11 +159,11 @@ struct ConfigView: View {
             print("(cn) successfully applied config tweaks!")
             Haptic.shared.play(.soft)
             if showTips {
-                Alertinator.shared.alert(title: "Successfully appiled config tweaks!", body: AppMsg.applied, actionLabel: "Respring", action: { mgr.shouldRespring = true })
+                Alertinator.shared.alert(title: "配置调整已应用！", body: AppMsg.applied, actionLabel: "重启桌面", action: { mgr.shouldRespring = true })
             }
         } catch {
             print("(cn) failed to write config files: \(error)")
-            Alertinator.shared.alert(title: "Failed to apply tweaks!", body: AppMsg.opFailed)
+            Alertinator.shared.alert(title: "应用失败！", body: AppMsg.opFailed)
         }
     }
     
@@ -179,11 +179,11 @@ struct ConfigView: View {
             loadData()
             footnoteText = ""
             if showTips {
-                Alertinator.shared.alert(title: "Successfully reset config tweaks!", body: AppMsg.applied, actionLabel: "Respring", action: { mgr.shouldRespring = true })
+                Alertinator.shared.alert(title: "配置已恢复！", body: AppMsg.applied, actionLabel: "重启桌面", action: { mgr.shouldRespring = true })
             }
         } catch {
             print("(cn) failed to reset config files: \(error)")
-            Alertinator.shared.alert(title: "Failed to reset tweaks!", body: AppMsg.opFailed)
+            Alertinator.shared.alert(title: "恢复失败！", body: AppMsg.opFailed)
         }
     }
 }

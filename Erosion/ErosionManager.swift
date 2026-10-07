@@ -16,9 +16,9 @@ enum AppURL {
 }
 
 enum AppMsg {
-    static let opFailed = "Restart the app and try again. If this issue persists, your device may be unsupported, or this specific tweak may not work on your device properly."
-    static let applied = "Respring your device for changes to take effect."
-    static let unsupported = "We're sorry, but the exploits that Erosion rely on are patched in this version. Please exit the app."
+    static let opFailed = "请重启应用后重试。若问题依旧，可能是当前设备/系统不受支持，或该功能在你的设备上无法正常工作。"
+    static let applied = "请重启桌面（Respring）以使更改生效。"
+    static let unsupported = "很抱歉，Erosion 依赖的漏洞在当前系统版本中已被封堵，请退出应用。"
 }
 
 final class ErosionManager: ObservableObject {

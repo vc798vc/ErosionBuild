@@ -21,15 +21,15 @@ struct OperationsView: View {
     var body: some View {
         List {
             Section {
-                TextField("Directory", text: $directory)
+                TextField("目录", text: $directory)
                     .disabled(isAcc)
-                TextField("File Name", text: $fileName)
+                TextField("文件名", text: $fileName)
                     .disabled(isAcc)
                 HStack {
-                    Button("Grant Access") {
+                    Button("获取访问权限") {
                         let res = bq.grantAccess(atPath: directory, toFileName: fileName)
                         if !res.0 {
-                            Alertinator.shared.alert(title: "Failed to get access to target file!", body: "\(res.1): \(res.2)")
+                            Alertinator.shared.alert(title: "无法访问目标文件！", body: "\(res.1): \(res.2)")
                         } else {
                             isAcc = true
                         }
@@ -39,30 +39,30 @@ struct OperationsView: View {
                         Spacer()
                         HStack {
                             Image(systemName: "checkmark")
-                            Text("Access Granted")
+                            Text("已获得权限")
                         }
                         .foregroundStyle(.green)
                     }
                 }
                 if isAcc {
-                    Button("Change Path", role: .destructive) {
+                    Button("更改路径", role: .destructive) {
                         isAcc = false
                         imprtName = ""
                         imprtData = Data()
                     }
                     
-                    Button("Export File") {
+                    Button("导出文件") {
                         let fileDir = "\(directory)/\(fileName)"
                         presentShareSheet(with: URL(fileURLWithPath: fileDir))
                     }
                 }
             } header: {
-                HeaderLabel(text: "Target", icon: "dot.scope")
+                HeaderLabel(text: "目标", icon: "dot.scope")
             }
             
             Section {
                 HStack {
-                    Button("Import File") {
+                    Button("导入文件") {
                         showImporter = true
                     }
                     .disabled(!imprtData.isEmpty)
@@ -74,7 +74,7 @@ struct OperationsView: View {
                     }
                 }
                 
-                Button("Overwrite File") {
+                Button("覆盖写入") {
                     do {
                         let targetURL = URL(fileURLWithPath: "\(directory)/\(fileName)")
                         try imprtData.write(to: targetURL)
@@ -82,12 +82,12 @@ struct OperationsView: View {
                         Haptic.shared.play(.soft)
                     } catch {
                         print("(ov) failed to overwrite: \(error)")
-                        Alertinator.shared.alert(title: "Failed to overwrite file!", body: "Make sure that your paths are correct and that you have access. Check error logs for more detailed information.")
+                        Alertinator.shared.alert(title: "覆盖文件失败！", body: "请确认路径填写正确且已成功获取访问权限。详细错误可查看主界面日志。")
                     }
                 }
                 .disabled(imprtData.isEmpty)
                 
-                Button("Move File") {
+                Button("移动写入") {
                     do {
                         let targetURL = URL(fileURLWithPath: "\(directory)").appendingPathComponent(imprtName)
                         try imprtData.write(to: targetURL)
@@ -95,12 +95,12 @@ struct OperationsView: View {
                         Haptic.shared.play(.soft)
                     } catch {
                         print("(ov) failed to move: \(error)")
-                        Alertinator.shared.alert(title: "Failed to move file!", body: "Make sure that your paths are correct and that you have access. Check error logs for more detailed information.")
+                        Alertinator.shared.alert(title: "移动文件失败！", body: "请确认路径填写正确且已成功获取访问权限。详细错误可查看主界面日志。")
                     }
                 }
                 .disabled(imprtData.isEmpty)
                 
-                Button("Delete File", role: .destructive) {
+                Button("删除文件", role: .destructive) {
                     do {
                         let targetURL = URL(fileURLWithPath: "\(directory)/\(fileName)")
                         try fm.removeItem(at: targetURL)
@@ -108,15 +108,15 @@ struct OperationsView: View {
                         Haptic.shared.play(.heavy)
                     } catch {
                         print("(ov) failed to delete: \(error)")
-                        Alertinator.shared.alert(title: "Failed to delete file!", body: "Make sure that your paths are correct and that you have access. Check error logs for more detailed information.")
+                        Alertinator.shared.alert(title: "删除文件失败！", body: "请确认路径填写正确且已成功获取访问权限。详细错误可查看主界面日志。")
                     }
                 }
                 .disabled(imprtData.isEmpty)
             } header: {
-                HeaderLabel(text: "Operations", icon: "wrench.and.screwdriver")
+                HeaderLabel(text: "操作", icon: "wrench.and.screwdriver")
             }
         }
-        .navigationTitle("File Operations")
+        .navigationTitle("文件操作")
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.item]) { result in
             handleImport(result)
         }
@@ -137,11 +137,11 @@ struct OperationsView: View {
                 imprtName = recURL.lastPathComponent
             } catch {
                 print("(ov) failed to import file: \(error)")
-                Alertinator.shared.alert(title: "Failed to import file!", body: "This file is likely invaild, corrupted, or inaccessible. Please try a different overwrite file.")
+                Alertinator.shared.alert(title: "导入文件失败！", body: "该文件可能无效、已损坏或无法读取，请换一个文件重试。")
             }
         case .failure(let error):
             print("(ov) failed to import file: \(error)")
-            Alertinator.shared.alert(title: "Failed to import file!", body: "This file is likely invaild, corrupted, or inaccessible. Please try a different overwrite file.")
+            Alertinator.shared.alert(title: "导入文件失败！", body: "该文件可能无效、已损坏或无法读取，请换一个文件重试。")
         }
     }
 }
