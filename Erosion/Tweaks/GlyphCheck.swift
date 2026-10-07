@@ -45,7 +45,8 @@ enum GlyphCheck {
         guard let font = CGFont(provider) else {
             BAPurge.log("(glyph) CGFont rejected"); return
         }
-        BAPurge.log("(glyph) font loaded: \(font.postScriptName ?? "?" as CFString)")
+        let ps = font.postScriptName as String? ?? "?"
+        BAPurge.log("(glyph) font loaded: \(ps)")
 
         guard let ctx = CGContext(data: nil, width: 64, height: 64,
                                   bitsPerComponent: 8, bytesPerRow: 64,
