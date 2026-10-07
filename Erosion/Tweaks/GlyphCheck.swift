@@ -58,9 +58,9 @@ enum GlyphCheck {
         ctx.setFont(font)
         ctx.setFontSize(1024)
 
-        var glyph: CGGlyph = 0
-        if !font.getGlyphs(forGlyphNames: ["A" as CFString], glyphs: &glyph) {
-            BAPurge.log("(glyph) name lookup failed, using index 1")
+        var glyph: CGGlyph = CGFontGetGlyphWithGlyphName(font, "A" as CFString)
+        if glyph == 0 {
+            BAPurge.log("(glyph) glyph lookup failed, using index 1")
             glyph = 1
         }
 
