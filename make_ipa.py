@@ -8,6 +8,7 @@ import base64
 import io
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -200,10 +201,49 @@ def wait_build(owner, token, head_sha):
     raise SystemExit("构建超时")
 
 
+def _raw_get(url, token, timeout=240):
+    """GET a URL that 302-redirects to a blob storage URL. The redirect target
+    rejects our Authorization header, so strip it on the way out (same trick as
+    the artifact download)."""
+    class _R(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            n = super().redirect_request(req, fp, code, msg, headers, newurl)
+            for k in ("Authorization", "authorization"):
+                n.headers.pop(k.capitalize(), None)
+                n.unredirected_hdrs.pop(k.capitalize(), None)
+            return n
+
+    opener = urllib.request.build_opener(_R)
+    req = urllib.request.Request(url, headers={**UA, "Authorization": f"Bearer {token}"})
+    return opener.open(req, timeout=timeout).read()
+
+
 def dump_logs(owner, token, run_id):
+    """The /logs endpoint is a 302 to a zip, NOT JSON -- the old code fed the
+    zip bytes to json.loads and died with 'Expecting value'. Fetch it properly,
+    unzip, and print only the interesting lines."""
     try:
-        logs = api("GET", f"/repos/{owner}/{REPO}/actions/runs/{run_id}/logs", token)
-        print("[build] 日志:", logs)
+        jobs = api("GET", f"/repos/{owner}/{REPO}/actions/runs/{run_id}/jobs?per_page=100", token) or {}
+        for j in jobs.get("jobs", []):
+            print(f"[build] job {j['name']}: {j.get('conclusion')}")
+            for s in j.get("steps", []):
+                print(f"         step {s['number']:2d} {s['name']:28s} {s.get('conclusion')}")
+    except Exception as e:  # noqa
+        print("[build] 无法拉取 steps:", e)
+
+    try:
+        data = _raw_get(f"{API}/repos/{owner}/{REPO}/actions/runs/{run_id}/logs", token)
+        z = zipfile.ZipFile(io.BytesIO(data))
+        pat = re.compile(r"(error:|error\b|failed|FAILED|xcodebuild:|No such|not produced|missing|suspicious|warning:.*deprecat)", re.I)
+        print("[build] ---- 日志关键行 ----")
+        for n in z.namelist():
+            if not n.endswith(".txt"):
+                continue
+            txt = z.read(n).decode("utf-8", "replace")
+            for i, line in enumerate(txt.splitlines()):
+                if pat.search(line):
+                    print(f"[{n}:{i+1}] {line.rstrip()}")
+        print("[build] ---- 日志结束 ----")
     except Exception as e:  # noqa
         print("[build] 无法拉取日志:", e)
 
